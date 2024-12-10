@@ -1,5 +1,5 @@
 {
-  "name": "@crewos/react-pro-sidebar",
+  "name": "react-pro-sidebar-crewos",
   "version": "1.1.0",
   "description": "high level and customizable side navigation",
   "main": "dist/index.js",
