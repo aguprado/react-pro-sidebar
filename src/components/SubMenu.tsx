@@ -21,62 +21,17 @@ import { LevelContext } from './Menu';
 
 export interface SubMenuProps
   extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'prefix'> {
-  /**
-   * The label to be displayed in the menu item
-   */
   label?: string | React.ReactNode;
-
-  /**
-   * The icon to be displayed in the menu item
-   */
   icon?: React.ReactNode;
-
-  /**
-   * The prefix to be displayed in the menu item
-   */
   prefix?: React.ReactNode;
-
-  /**
-   * The suffix to be displayed in the menu item
-   */
   suffix?: React.ReactNode;
-
-  /**
-   * set open value to control the open state of the sub menu
-   */
   open?: boolean;
-
-  /**
-   * set defaultOpen value to set the initial open state of the sub menu
-   */
   defaultOpen?: boolean;
-
-  /**
-   * If set to true, the menu item will have an active state
-   */
   active?: boolean;
-
-  /**
-   * If set to true, the menu item will be disabled
-   */
   disabled?: boolean;
-
-  /**
-   * The component to be rendered as the menu item button
-   */
   component?: string | React.ReactElement;
-
-  /**
-   * Apply styles from the root element
-   */
   rootStyles?: CSSObject;
-
-  /**
-   * callback function to be called when the open state of the sub menu changes
-   * @param open
-   */
   onOpenChange?: (open: boolean) => void;
-
   children?: React.ReactNode;
 }
 
@@ -143,7 +98,6 @@ export const SubMenuFR: React.ForwardRefRenderFunction<HTMLLIElement, SubMenuPro
   ref,
 ) => {
   const level = React.useContext(LevelContext);
-
   const {
     collapsed,
     rtl,
@@ -191,26 +145,25 @@ export const SubMenuFR: React.ForwardRefRenderFunction<HTMLLIElement, SubMenuPro
     }
   };
 
+  // Se elimina la condición que impedía abrir/cerrar cuando (level === 0 && collapsed).
   const handleSlideToggle = (): void => {
-    if (!(level === 0 && collapsed)) {
-      if (typeof openControlled === 'undefined') {
-        clearTimeout(Number(timer.current));
-        open ? collapseContent() : expandContent();
-        onOpenChange?.(!open);
-        setOpen(!open);
-      } else {
-        onOpenChange?.(!openControlled);
-      }
+    if (typeof openControlled === 'undefined') {
+      clearTimeout(Number(timer.current));
+      open ? collapseContent() : expandContent();
+      onOpenChange?.(!open);
+      setOpen(!open);
+    } else {
+      onOpenChange?.(!openControlled);
     }
   };
 
   React.useEffect(() => {
-    if (!(level === 0 && collapsed) && typeof openControlled !== 'undefined' && mounted) {
+    if (typeof openControlled !== 'undefined') {
       clearTimeout(Number(timer.current));
       !openControlled ? collapseContent() : expandContent();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [collapsed, expandContent, label, level, onOpenChange, openControlled]);
+  }, [ expandContent, label, level, onOpenChange, openControlled]);
 
   const handleOnClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
     onClick?.(event);
@@ -277,53 +230,50 @@ export const SubMenuFR: React.ForwardRefRenderFunction<HTMLLIElement, SubMenuPro
     setTimeout(() => popperInstance?.update(), sidebarTransitionDuration);
     if (collapsed && level === 0) {
       setOpenWhenCollapsed(false);
-      // ? if its useful to close first level submenus on collapse sidebar uncomment the code below
-      // setOpen(false);
     }
   }, [collapsed, level, rtl, sidebarTransitionDuration, popperInstance]);
-
+  
   React.useEffect(() => {
-    const handleTogglePopper = (target: Node) => {
-      if (!openWhenCollapsed && buttonRef.current?.contains(target)) setOpenWhenCollapsed(true);
-      else if (
-        (closeOnClick &&
-          !(target as HTMLElement)
-            .closest(`.${menuClasses.menuItemRoot}`)
-            ?.classList.contains(menuClasses.subMenuRoot)) ||
-        (!contentRef.current?.contains(target) && openWhenCollapsed)
-      ) {
-        setOpenWhenCollapsed(false);
-      }
-    };
-
-    const handleDocumentClick = (event: MouseEvent) => {
-      handleTogglePopper(event.target as Node);
-    };
-
-    const handleDocumentKeyUp = (event: KeyboardEvent) => {
-      if (event.key === 'Enter') {
-        handleTogglePopper(event.target as Node);
-      } else if (event.key === 'Escape') {
-        setOpenWhenCollapsed(false);
-      }
-    };
-
-    const removeEventListeners = () => {
-      document.removeEventListener('click', handleDocumentClick);
-      document.removeEventListener('keyup', handleDocumentKeyUp);
-    };
-
-    removeEventListeners();
-
-    if (collapsed && level === 0) {
-      document.addEventListener('click', handleDocumentClick, false);
-      document.addEventListener('keyup', handleDocumentKeyUp, false);
+    const openHandler = () => setOpenWhenCollapsed(true);
+    const closeHandler = () => setOpenWhenCollapsed(false);
+    if (buttonRef.current) {
+      // Add the event listener
+      buttonRef.current.addEventListener('mouseenter', openHandler);
+      buttonRef.current.addEventListener('mouseleave', closeHandler);
     }
-
+  
     return () => {
-      removeEventListeners();
+      // Cleanup: remove the event listener when the component unmounts
+      // or if buttonRef changes.
+      if (buttonRef.current) {
+        buttonRef.current.removeEventListener('mouseenter', openHandler);
+        buttonRef.current.removeEventListener('mouseleave', closeHandler);
+      }
     };
-  }, [collapsed, level, closeOnClick, openWhenCollapsed]);
+  }, [buttonRef]);
+  
+  React.useEffect(() => {
+    const openHandler = () => setOpenWhenCollapsed(true);
+    const closeHandler = () => setOpenWhenCollapsed(false);
+    if (contentRef.current) {
+      // Add the event listener
+      contentRef.current.addEventListener('mouseenter', openHandler);
+      contentRef.current.addEventListener('mouseleave', closeHandler);
+      if (closeOnClick) {
+        contentRef.current.addEventListener('click', closeHandler);
+      }
+    }
+  
+    return () => {
+      // Cleanup: remove the event listener when the component unmounts
+      // or if contentRef changes.
+      if (contentRef.current) {
+        contentRef.current.removeEventListener('mouseenter', openHandler);
+        contentRef.current.removeEventListener('mouseleave', closeHandler);
+        contentRef.current.removeEventListener('click', closeHandler);
+      }
+    };
+  }, [contentRef, closeOnClick]);
 
   React.useEffect(() => {
     setMounted(true);
@@ -427,7 +377,6 @@ export const SubMenuFR: React.ForwardRefRenderFunction<HTMLLIElement, SubMenuPro
           )}
         </StyledExpandIconWrapper>
       </MenuButton>
-
       <SubMenuContent
         ref={contentRef}
         openWhenCollapsed={openWhenCollapsed}

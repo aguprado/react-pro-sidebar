@@ -6,7 +6,7 @@ import { SubMenu } from '../src/components/SubMenu';
 import { menuClasses, sidebarClasses } from '../src/utils/utilityClasses';
 
 describe('Menu', () => {
-  it('should display popper on submenu click when collapsed', async () => {
+  it('should display popper on submenu hover when collapsed', async () => {
     customRender(
       <Sidebar defaultCollapsed>
         <Menu>
@@ -21,7 +21,7 @@ describe('Menu', () => {
     expect(submenuButton).toBeInTheDocument();
     expect(submenuContent).toBeInTheDocument();
 
-    fireEvent.click(submenuButton);
+    fireEvent.mouseEnter(submenuButton);
 
     const sidebarElem = screen.getByTestId(`${sidebarClasses.root}-test-id`);
     expect(sidebarElem).toHaveClass(sidebarClasses.root);
