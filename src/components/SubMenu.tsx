@@ -166,8 +166,10 @@ export const SubMenuFR: React.ForwardRefRenderFunction<HTMLLIElement, SubMenuPro
   }, [ expandContent, label, level, onOpenChange, openControlled]);
 
   const handleOnClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-    onClick?.(event);
-    handleSlideToggle();
+    if (!collapsed) {
+      onClick?.(event);
+      handleSlideToggle();
+    }
   };
 
   const handleOnKeyUp = (event: React.KeyboardEvent<HTMLAnchorElement>) => {
